@@ -10,9 +10,10 @@ import {
 } from 'lucide-react'
 import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap'
 import siteConfig from '../config/siteConfig'
-import properties, { locations, propertyTypes } from '../data/properties'
-import { features, howItWorks, propertyTypeTiles } from '../data/siteData'
-import { formatCompactCurrency, formatCurrency } from '../lib/format'
+import properties, { locations, propertyTypes, SAMPLE_LISTINGS_NOTE } from '../data/properties'
+import { features, highlights, howItWorks, propertyTypeTiles } from '../data/siteData'
+import { formatCompactCurrency } from '../lib/format'
+import { whatsappLink } from '../lib/contact'
 import { splitWords } from '../lib/splitText'
 import { useAppReady } from '../context/AppReadyContext'
 import { usePrefersReducedMotion } from '../hooks/useMotion'
@@ -22,40 +23,29 @@ import PropertyCard from '../components/PropertyCard'
 import SectionHeading from '../components/SectionHeading'
 import Reveal from '../components/Reveal'
 import Magnetic from '../components/Magnetic'
-import Counter from '../components/Counter'
-import TestimonialSlider from '../components/TestimonialSlider'
+import ReviewsSection from '../components/ReviewsSection'
+import WhatsAppIcon from '../components/WhatsAppIcon'
 
 const featuredProperties = properties.filter((property) => property.featured).slice(0, 6)
+
+const priceStops = {
+  Sale: [5000000, 10000000, 20000000, 30000000, 50000000, 100000000, 200000000],
+  Rent: [25000, 50000, 75000, 100000, 150000, 250000, 500000],
+}
 
 function HeroSearch() {
   const navigate = useNavigate()
   const [purpose, setPurpose] = useState('Sale')
   const [location, setLocation] = useState('')
   const [type, setType] = useState('')
+  const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
 
-  const budgetOptions =
-    purpose === 'Rent'
-      ? [
-          { value: '', label: 'Any monthly rent' },
-          { value: '2000', label: `Up to ${formatCurrency(2000)}` },
-          { value: '3000', label: `Up to ${formatCurrency(3000)}` },
-          { value: '4500', label: `Up to ${formatCurrency(4500)}` },
-          { value: '7500', label: `Up to ${formatCurrency(7500)}` },
-          { value: '15000', label: `Up to ${formatCurrency(15000)}` },
-        ]
-      : [
-          { value: '', label: 'Any budget' },
-          { value: '300000', label: `Up to ${formatCompactCurrency(300000)}` },
-          { value: '500000', label: `Up to ${formatCompactCurrency(500000)}` },
-          { value: '750000', label: `Up to ${formatCompactCurrency(750000)}` },
-          { value: '1000000', label: `Up to ${formatCompactCurrency(1000000)}` },
-          { value: '1500000', label: `Up to ${formatCompactCurrency(1500000)}` },
-          { value: '3000000', label: `Up to ${formatCompactCurrency(3000000)}` },
-        ]
+  const stops = priceStops[purpose]
 
   const handlePurposeChange = (event) => {
     setPurpose(event.target.value)
+    setMinPrice('')
     setMaxPrice('')
   }
 
@@ -65,7 +55,14 @@ function HeroSearch() {
     params.set('purpose', purpose)
     if (location) params.set('location', location)
     if (type) params.set('type', type)
+
+    if (minPrice) params.set('minPrice', minPrice)
     if (maxPrice) params.set('maxPrice', maxPrice)
+    if (minPrice && maxPrice && Number(minPrice) > Number(maxPrice)) {
+      params.delete('minPrice')
+      params.set('maxPrice', minPrice)
+    }
+
     navigate(`/properties?${params.toString()}`)
   }
 
@@ -73,9 +70,13 @@ function HeroSearch() {
     <form className="hero-search-panel" onSubmit={handleSubmit} aria-label="Search properties">
       <div className="hero-search-grid">
         <div className="hero-field">
-          <label htmlFor="hero-location">City or area</label>
+          <label htmlFor="hero-location">Location</label>
           <div className="hero-select-wrap">
-            <select id="hero-location" value={location} onChange={(event) => setLocation(event.target.value)}>
+            <select
+              id="hero-location"
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+            >
               <option value="">All areas</option>
               {locations.map((area) => (
                 <option key={area} value={area}>
@@ -88,7 +89,7 @@ function HeroSearch() {
         </div>
 
         <div className="hero-field">
-          <label htmlFor="hero-purpose">Looking to</label>
+          <label htmlFor="hero-purpose">Buy or rent</label>
           <div className="hero-select-wrap">
             <select id="hero-purpose" value={purpose} onChange={handlePurposeChange}>
               <option value="Sale">Buy</option>
@@ -114,16 +115,36 @@ function HeroSearch() {
         </div>
 
         <div className="hero-field">
-          <label htmlFor="hero-budget">Budget</label>
+          <label htmlFor="hero-min-price">Min price</label>
           <div className="hero-select-wrap">
             <select
-              id="hero-budget"
+              id="hero-min-price"
+              value={minPrice}
+              onChange={(event) => setMinPrice(event.target.value)}
+            >
+              <option value="">No minimum</option>
+              {stops.map((stop) => (
+                <option key={stop} value={stop}>
+                  From {formatCompactCurrency(stop)}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={15} aria-hidden="true" />
+          </div>
+        </div>
+
+        <div className="hero-field">
+          <label htmlFor="hero-max-price">Max price</label>
+          <div className="hero-select-wrap">
+            <select
+              id="hero-max-price"
               value={maxPrice}
               onChange={(event) => setMaxPrice(event.target.value)}
             >
-              {budgetOptions.map((option) => (
-                <option key={option.value || 'any'} value={option.value}>
-                  {option.label}
+              <option value="">No maximum</option>
+              {stops.map((stop) => (
+                <option key={stop} value={stop}>
+                  Up to {formatCompactCurrency(stop)}
                 </option>
               ))}
             </select>
@@ -133,7 +154,7 @@ function HeroSearch() {
 
         <Magnetic className="hero-search-action" strength={0.16}>
           <button type="submit" className="btn btn-gold hero-search-submit">
-            Search
+            Search Properties
             <Search size={17} aria-hidden="true" />
           </button>
         </Magnetic>
@@ -143,7 +164,7 @@ function HeroSearch() {
 }
 
 export default function Home() {
-  useDocumentTitle(siteConfig.tagline)
+  useDocumentTitle()
   const heroRef = useRef(null)
   const headingRef = useRef(null)
   const typesRef = useRef(null)
@@ -169,6 +190,7 @@ export default function Home() {
           '-=0.4',
         )
         .from('.hero-sub', { y: 22, autoAlpha: 0, duration: 0.7 }, '-=0.6')
+        .from('.hero-actions', { y: 18, autoAlpha: 0, duration: 0.6 }, '-=0.5')
         .from('.hero-search-panel', { y: 28, autoAlpha: 0, duration: 0.75 }, '-=0.45')
         .from('.hero-quick-links', { y: 14, autoAlpha: 0, duration: 0.5 }, '-=0.42')
         .from('.hero-scroll', { autoAlpha: 0, duration: 0.5 }, '-=0.3')
@@ -208,7 +230,7 @@ export default function Home() {
       if (!typesRef.current || !typesTrackRef.current) return undefined
       const mm = gsap.matchMedia()
 
-      mm.add('(min-width: 1024px) and (prefers-reduced-motion: no-preference)', () => {
+      mm.add('(min-width: 1025px) and (prefers-reduced-motion: no-preference)', () => {
         const track = typesTrackRef.current
         const section = typesRef.current
         const distance = () => Math.max(0, track.scrollWidth - window.innerWidth + 64)
@@ -322,6 +344,7 @@ export default function Home() {
             alt={siteConfig.hero.backgroundAlt}
             className="hero-bg-img"
             sizes="100vw"
+            loading="eager"
           />
           <div className="hero-overlay" aria-hidden="true" />
           <div className="hero-grain" aria-hidden="true" />
@@ -336,22 +359,41 @@ export default function Home() {
           <h1 id="hero-title" className="hero-title" ref={headingRef}>
             {siteConfig.hero.headlineLines.map((line, index) => (
               <span
-                className={`hero-line ${index === siteConfig.hero.headlineLines.length - 1 ? 'is-accent' : ''}`}
+                className={`hero-line ${
+                  index === siteConfig.hero.headlineLines.length - 1 ? 'is-accent' : ''
+                }`}
                 data-split-line
                 key={line}
               >
                 {line}
+                {index < siteConfig.hero.headlineLines.length - 1 ? ' ' : ''}
               </span>
             ))}
           </h1>
 
           <p className="hero-sub">{siteConfig.hero.subtext}</p>
 
+          <div className="hero-actions">
+            <Link to="/properties" className="btn btn-gold">
+              Explore Properties
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
+            <a
+              href={whatsappLink()}
+              className="btn btn-whatsapp"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <WhatsAppIcon size={18} />
+              Contact on WhatsApp
+            </a>
+          </div>
+
           <HeroSearch />
 
           <div className="hero-quick-links">
-            <span>Popular:</span>
-            {locations.slice(0, 3).map((area) => (
+            <span>Popular areas:</span>
+            {locations.slice(0, 4).map((area) => (
               <Link key={area} to={`/properties?location=${encodeURIComponent(area)}`}>
                 {area}
                 <ArrowUpRight size={13} aria-hidden="true" />
@@ -360,7 +402,7 @@ export default function Home() {
           </div>
         </div>
 
-        <a href="#featured-homes" className="hero-scroll" aria-label="Scroll to featured properties">
+        <a href="#featured-properties" className="hero-scroll" aria-label="Scroll to featured properties">
           <span>Scroll to explore</span>
           <span className="scroll-track" aria-hidden="true">
             <span className="scroll-dot" />
@@ -368,23 +410,35 @@ export default function Home() {
         </a>
       </section>
 
-      <section className="stats-band" aria-label="Our experience in numbers">
+      <section className="trust-band" aria-label="Business highlights">
         <div className="container">
-          <div className="stats-panel">
-            {siteConfig.stats.map((stat) => (
-              <Counter key={stat.label} {...stat} />
-            ))}
+          <div className="trust-panel">
+            {highlights.map((highlight) => {
+              const Icon = highlight.icon
+              return (
+                <article className="trust-item" key={highlight.label}>
+                  <span className="trust-icon" aria-hidden="true">
+                    <Icon size={19} />
+                  </span>
+                  <p className={`trust-value ${highlight.value.length > 4 ? 'is-text' : ''}`}>
+                    {highlight.value}
+                    {highlight.suffix ? <span>{highlight.suffix}</span> : null}
+                  </p>
+                  <p className="trust-label">{highlight.label}</p>
+                </article>
+              )
+            })}
           </div>
         </div>
       </section>
 
-      <section className="section featured-section" id="featured-homes">
+      <section className="section featured-section" id="featured-properties">
         <div className="container">
           <div className="section-heading-row" data-animate="fade-up">
             <SectionHeading
-              eyebrow="A curated collection"
-              title="Homes with a little more character"
-              text="Six places we would happily call home ourselves — each chosen for its light, layout and location."
+              eyebrow="Featured properties"
+              title="Properties to explore in Karachi"
+              text="A selection of houses, apartments, plots and commercial spaces to help you start your search."
             />
             <Link to="/properties" className="text-link">
               View all properties
@@ -392,9 +446,13 @@ export default function Home() {
             </Link>
           </div>
 
+          <p className="listing-disclaimer" data-animate="fade-up">
+            {SAMPLE_LISTINGS_NOTE}
+          </p>
+
           <div className="property-grid" data-stagger>
-            {featuredProperties.map((property, index) => (
-              <PropertyCard key={property.id} property={property} index={index} />
+            {featuredProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} />
             ))}
           </div>
         </div>
@@ -405,9 +463,9 @@ export default function Home() {
           <div className="container">
             <div className="types-header">
               <SectionHeading
-                eyebrow="Browse by type"
-                title="Find the shape of home that fits"
-                text="From a first apartment to a forever house, begin with the kind of space you have in mind."
+                eyebrow="Browse by category"
+                title="Find the right property type"
+                text="Start with the kind of property you have in mind, then narrow the search by area and budget."
               />
               <p className="types-scroll-hint">
                 <MoveHorizontal size={18} aria-hidden="true" />
@@ -425,7 +483,7 @@ export default function Home() {
                     to={`/properties?type=${tile.name}`}
                     className="type-card"
                     key={tile.name}
-                    aria-label={`Browse ${tile.title} (${count} listings)`}
+                    aria-label={`Browse ${tile.title} (${count} sample listings)`}
                   >
                     <SmartImage
                       src={tile.image}
@@ -436,7 +494,7 @@ export default function Home() {
                     <span className="type-card-shade" aria-hidden="true" />
                     <span className="type-card-content">
                       <span className="type-card-count">
-                        {String(count).padStart(2, '0')} listings
+                        {String(count).padStart(2, '0')} sample listings
                       </span>
                       <span className="type-card-bottom">
                         <span>
@@ -461,17 +519,17 @@ export default function Home() {
           <div className="why-grid">
             <div className="why-intro" data-animate="fade-right">
               <SectionHeading
-                eyebrow="Why work with us"
-                title="Property advice that feels personal"
-                text="We combine local knowledge with a quieter, more considered way of working. The result is a search that respects your time — and your plans."
+                eyebrow="Why choose us"
+                title="Property advice that stays personal"
+                text="Karachi Estate Property Advisor works directly with buyers, sellers, tenants and investors across the city. The focus is simple: understand your requirement and help you take the next step."
               />
               <Link to="/about" className="text-link">
-                Meet the team
+                More about us
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
               <div className="why-note">
                 <Sparkles size={18} aria-hidden="true" />
-                <p>One advisor, from first conversation to final key.</p>
+                <p>Direct communication by phone and WhatsApp.</p>
               </div>
             </div>
 
@@ -499,8 +557,8 @@ export default function Home() {
         <div className="container">
           <SectionHeading
             eyebrow="How it works"
-            title="A simple path to the right place"
-            text="Three clear steps, with a real person beside you at every one."
+            title="A straightforward property process"
+            text="Three clear steps, with a real person available to answer your questions."
             align="center"
             className="how-heading"
           />
@@ -528,12 +586,12 @@ export default function Home() {
         </div>
       </section>
 
-      <TestimonialSlider />
+      <ReviewsSection />
 
       <section className="cta-banner" ref={ctaRef}>
         <div className="cta-bg">
           <SmartImage
-            src="https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1400&q=70"
+            src="https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1500&q=75"
             alt="Warmly lit contemporary house with a garden terrace"
             className="cta-bg-image"
             sizes="100vw"
@@ -542,18 +600,28 @@ export default function Home() {
         </div>
         <div className="container cta-content">
           <Reveal variant="fade-up">
-            <p className="eyebrow">A no-obligation conversation</p>
-            <h2>What could your home be worth today?</h2>
+            <p className="eyebrow">Start a conversation</p>
+            <h2>Looking for Your Next Property in Karachi?</h2>
             <p>
-              Share a few details and we&apos;ll arrange a considered valuation, with clear local
-              context and absolutely no pressure.
+              Tell us what you need and we will help you understand the options, the next steps and
+              the questions to ask before you decide.
             </p>
-            <Magnetic strength={0.2}>
-              <Link to="/contact" className="btn btn-gold">
-                Request a free valuation
-                <ArrowRight size={17} aria-hidden="true" />
-              </Link>
-            </Magnetic>
+            <div className="cta-actions">
+              <Magnetic strength={0.2}>
+                <a
+                  href={whatsappLink()}
+                  className="btn btn-gold"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <WhatsAppIcon size={17} />
+                  Chat With Us on WhatsApp
+                </a>
+              </Magnetic>
+              <a href={siteConfig.phoneHref} className="btn btn-outline-light">
+                Call {siteConfig.phone}
+              </a>
+            </div>
           </Reveal>
         </div>
       </section>

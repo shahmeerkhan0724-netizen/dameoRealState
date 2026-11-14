@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Compass, Home } from 'lucide-react'
+import { ArrowRight, Compass, Home } from 'lucide-react'
 import siteConfig from '../config/siteConfig'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 

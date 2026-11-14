@@ -17,7 +17,7 @@ import NotFound from './pages/NotFound'
 function shouldShowIntro() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false
   try {
-    return window.sessionStorage.getItem('yourbrand-intro-seen') !== '1'
+    return window.sessionStorage.getItem('kepa-intro-seen') !== '1'
   } catch {
     return true
   }
@@ -30,9 +30,9 @@ export default function App() {
 
   const finishIntro = useCallback(() => {
     try {
-      window.sessionStorage.setItem('yourbrand-intro-seen', '1')
+      window.sessionStorage.setItem('kepa-intro-seen', '1')
     } catch {
-      // Session storage is optional for this demo.
+      // Session storage is optional; the intro simply replays next time.
     }
     setShowIntro(false)
     setIntroDone(true)

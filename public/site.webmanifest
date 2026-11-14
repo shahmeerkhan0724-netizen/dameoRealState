@@ -1,0 +1,17 @@
+{
+  "name": "Karachi Estate Property Advisor",
+  "short_name": "Karachi Estate",
+  "description": "Residential and commercial property guidance in Karachi.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F7FA",
+  "theme_color": "#071426",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "1536x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

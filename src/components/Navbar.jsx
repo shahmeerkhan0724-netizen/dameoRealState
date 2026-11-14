@@ -1,81 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import {
-  ArrowUpRight,
-  Heart,
-  Mail,
-  MapPin,
-  Menu,
-  Phone,
-  X,
-} from 'lucide-react'
+import { ArrowUpRight, Heart, MapPin, Menu, Phone, X } from 'lucide-react'
 import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap'
 import siteConfig from '../config/siteConfig'
+import { whatsappLink } from '../lib/contact'
 import Logo from './Logo'
 import Magnetic from './Magnetic'
+import WhatsAppIcon from './WhatsAppIcon'
 import { useFavourites } from '../context/FavouritesContext'
 import { usePrefersReducedMotion, useScrollLock } from '../hooks/useMotion'
 
 const navLinks = [
   { label: 'Home', to: '/' },
+  { label: 'About Us', to: '/about' },
   { label: 'Properties', to: '/properties' },
-  { label: 'About', to: '/about' },
   { label: 'Services', to: '/services' },
-  { label: 'Contact', to: '/contact' },
+  { label: 'Contact Us', to: '/contact' },
 ]
-
-const socialIcons = {
-  Instagram: InstagramIcon,
-  Facebook: FacebookIcon,
-  LinkedIn: LinkedInIcon,
-  YouTube: YouTubeIcon,
-}
-
-function InstagramIcon({ size = 17 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
-    </svg>
-  )
-}
-
-function FacebookIcon({ size = 17 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M14.5 8.5h2V5h-2.4C11.8 5 10.5 6.7 10.5 9v1.5H8V14h2.5v7h3.3v-7h2.7l.5-3.5h-3.2V9.3c0-.5.2-.8.7-.8Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function LinkedInIcon({ size = 17 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="4" y="9.5" width="4" height="10.5" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="6" cy="5.5" r="2" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M12 20V9.5h4v1.6c.8-1.2 1.9-1.9 3.4-1.9 2.4 0 3.6 1.6 3.6 4.4V20h-4v-5.7c0-1.4-.5-2.1-1.6-2.1-1.2 0-1.4.8-1.4 2.1V20h-4Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-    </svg>
-  )
-}
-
-function YouTubeIcon({ size = 17 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="2.5" y="5.5" width="19" height="13" rx="4" stroke="currentColor" strokeWidth="1.5" />
-      <path d="m10 9 5 3-5 3V9Z" fill="currentColor" />
-    </svg>
-  )
-}
 
 export default function Navbar() {
   const { pathname } = useLocation()
@@ -268,20 +209,25 @@ export default function Navbar() {
             </Link>
 
             <Magnetic className="nav-cta-wrap" strength={0.16}>
-              <Link to="/contact" className="btn btn-gold btn-sm nav-cta">
-                Book a viewing
-                <ArrowUpRight size={16} aria-hidden="true" />
-              </Link>
+              <a
+                href={whatsappLink()}
+                className="btn btn-gold btn-sm nav-cta"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <WhatsAppIcon size={16} />
+                WhatsApp
+              </a>
             </Magnetic>
 
             <button
               type="button"
               ref={toggleRef}
               className="nav-menu-toggle"
-              aria-label="Open navigation menu"
+              aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={menuOpen}
               aria-controls="mobile-navigation"
-              onClick={openMenu}
+              onClick={menuOpen ? closeMenu : openMenu}
             >
               <Menu size={22} aria-hidden="true" />
             </button>
@@ -311,7 +257,7 @@ export default function Navbar() {
             aria-label="Site navigation"
           >
             <div className="drawer-head">
-              <Logo onClick={handleDrawerLink} />
+              <Logo onClick={handleDrawerLink} plate={false} />
               <button
                 type="button"
                 ref={closeRef}
@@ -346,40 +292,42 @@ export default function Navbar() {
                 <Phone size={16} aria-hidden="true" />
                 {siteConfig.phone}
               </a>
-              <a href={`mailto:${siteConfig.email}`} className="drawer-contact-line">
-                <Mail size={16} aria-hidden="true" />
-                {siteConfig.email}
+              <a
+                href={whatsappLink()}
+                className="drawer-contact-line"
+                target="_blank"
+                rel="noreferrer"
+                onClick={handleDrawerLink}
+              >
+                <WhatsAppIcon size={16} />
+                {siteConfig.whatsappDisplay}
               </a>
               <p className="drawer-contact-line">
                 <MapPin size={16} aria-hidden="true" />
-                {siteConfig.addressShort}
+                {siteConfig.address}
               </p>
             </div>
 
             <div className="drawer-footer drawer-stagger">
-              <Magnetic strength={0.13} className="drawer-cta-wrap">
-                <Link to="/properties" className="btn btn-gold btn-block" onClick={handleDrawerLink}>
+              <div className="drawer-actions">
+                <a
+                  href={whatsappLink()}
+                  className="btn btn-gold btn-block"
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={handleDrawerLink}
+                >
+                  <WhatsAppIcon size={16} />
+                  Chat on WhatsApp
+                </a>
+                <Link
+                  to="/properties"
+                  className="btn btn-outline-navy btn-block"
+                  onClick={handleDrawerLink}
+                >
                   Explore properties
                   <ArrowUpRight size={16} aria-hidden="true" />
                 </Link>
-              </Magnetic>
-
-              <div className="drawer-socials">
-                {siteConfig.social.map((social) => {
-                  const Icon = socialIcons[social.label]
-                  if (!Icon) return null
-                  return (
-                    <a
-                      key={social.label}
-                      href={social.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`${siteConfig.brandName} on ${social.label}`}
-                    >
-                      <Icon size={17} />
-                    </a>
-                  )
-                })}
               </div>
             </div>
           </aside>

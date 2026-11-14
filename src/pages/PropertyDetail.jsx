@@ -10,50 +10,63 @@ import {
   Heart,
   MapPin,
   Maximize,
+  Phone,
 } from 'lucide-react'
 import properties from '../data/properties'
 import { formatArea, formatPrice } from '../lib/format'
+import { propertyWhatsAppLink } from '../lib/contact'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import { useFavourites } from '../context/FavouritesContext'
 import PropertyGallery from '../components/PropertyGallery'
 import EnquiryCard from '../components/EnquiryCard'
-import MortgageCalculator from '../components/MortgageCalculator'
-import MapPlaceholder from '../components/MapPlaceholder'
+import MapEmbed from '../components/MapEmbed'
 import PropertyCard from '../components/PropertyCard'
 import SectionHeading from '../components/SectionHeading'
+import WhatsAppIcon from '../components/WhatsAppIcon'
+import siteConfig from '../config/siteConfig'
 import NotFound from './NotFound'
 
 export default function PropertyDetail() {
   const { id } = useParams()
   const property = properties.find((item) => item.id === id)
-  const { isFavourite, toggleFavourite } = useFavourites()
-
-  useDocumentTitle(property ? property.title : 'Property not found')
-
-  const similarProperties = useMemo(() => {
-    if (!property) return []
-    const primary = properties.filter(
-      (item) =>
-        item.id !== property.id && (item.type === property.type || item.city === property.city),
-    )
-    const fallback = properties.filter(
-      (item) => item.id !== property.id && !primary.some((match) => match.id === item.id),
-    )
-    return [...primary, ...fallback].slice(0, 3)
-  }, [property])
 
   if (!property) return <NotFound />
 
-  const favourite = isFavourite(property.id)
+  return <PropertyDetailView property={property} />
+}
 
-  const featureRows = [
+function PropertyDetailView({ property }) {
+  useDocumentTitle(
+    property.title,
+    `${property.title} in ${property.location}, ${property.city}. View property details and enquire with Karachi Estate Property Advisor.`,
+  )
+  const { isFavourite, toggleFavourite } = useFavourites()
+
+  const similarProperties = useMemo(() => {
+    const primary = properties.filter(
+      (item) => item.id !== property.id && item.type === property.type,
+    )
+    const secondary = properties.filter(
+      (item) =>
+        item.id !== property.id &&
+        item.type !== property.type &&
+        item.purpose === property.purpose,
+    )
+    return [...primary, ...secondary].slice(0, 3)
+  }, [property])
+
+  const favourite = isFavourite(property.id)
+  const whatsappHref = propertyWhatsAppLink(property)
+
+  const overviewRows = [
     ['Property type', property.type],
     ['Purpose', property.purpose === 'Sale' ? 'For sale' : 'For rent'],
-    ['Bedrooms', property.beds > 0 ? property.beds : '—'],
-    ['Bathrooms', property.baths > 0 ? property.baths : '—'],
+    ['Bedrooms', property.beds > 0 ? property.beds : 'Not applicable'],
+    ['Bathrooms', property.baths > 0 ? property.baths : 'Not applicable'],
     ['Area', formatArea(property.area, property.areaUnit)],
     ['Parking', property.parking > 0 ? `${property.parking} spaces` : 'None'],
     ['Year built', property.yearBuilt],
+    ['Location', `${property.location}, ${property.city}`],
     ['Reference', property.reference],
   ]
 
@@ -85,13 +98,20 @@ export default function PropertyDetail() {
 
       <div className="container property-detail-layout">
         <div className="property-main">
+          {property.sample ? (
+            <p className="listing-disclaimer listing-disclaimer--inline" role="note">
+              Sample listing shown for illustration only. Contact us to confirm current
+              availability, pricing and details for this property.
+            </p>
+          ) : null}
+
           <header className="property-detail-header" data-animate="fade-up">
             <div className="property-detail-badges">
               <span className={`badge ${property.purpose === 'Rent' ? 'badge-gold' : 'badge-navy'}`}>
                 {property.status}
               </span>
               <span className="badge badge-muted">{property.type}</span>
-              {property.featured ? <span className="badge badge-outline">Featured home</span> : null}
+              {property.sample ? <span className="badge badge-outline">Sample listing</span> : null}
             </div>
 
             <h1>{property.title}</h1>
@@ -106,21 +126,17 @@ export default function PropertyDetail() {
             </div>
 
             <div className="property-detail-stats">
-              {property.beds > 0 ? (
-                <span>
-                  <BedDouble size={19} aria-hidden="true" />
-                  <strong>{property.beds}</strong> Bedrooms
-                </span>
-              ) : null}
-              {property.baths > 0 ? (
-                <span>
-                  <Bath size={19} aria-hidden="true" />
-                  <strong>{property.baths}</strong> Bathrooms
-                </span>
-              ) : null}
               <span>
                 <Maximize size={19} aria-hidden="true" />
                 <strong>{property.area.toLocaleString('en-US')}</strong> {property.areaUnit}
+              </span>
+              <span>
+                <BedDouble size={19} aria-hidden="true" />
+                <strong>{property.beds > 0 ? property.beds : '—'}</strong> Bedrooms
+              </span>
+              <span>
+                <Bath size={19} aria-hidden="true" />
+                <strong>{property.baths > 0 ? property.baths : '—'}</strong> Bathrooms
               </span>
               {property.parking > 0 ? (
                 <span>
@@ -133,15 +149,43 @@ export default function PropertyDetail() {
                 Built <strong>{property.yearBuilt}</strong>
               </span>
             </div>
+
+            <div className="property-contact-actions">
+              <a href={siteConfig.phoneHref} className="btn btn-outline-navy">
+                <Phone size={17} aria-hidden="true" />
+                Call Now
+              </a>
+              <a
+                href={whatsappHref}
+                className="btn btn-whatsapp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <WhatsAppIcon size={18} />
+                WhatsApp Inquiry
+              </a>
+            </div>
           </header>
 
-          <section className="property-section" data-animate="fade-up">
-            <h2>About this home</h2>
+          <section className="property-section" data-animate="fade-up" aria-labelledby="property-overview">
+            <h2 id="property-overview">Property overview</h2>
+            <dl className="property-overview-grid">
+              {overviewRows.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+
+          <section className="property-section" data-animate="fade-up" aria-labelledby="property-description">
+            <h2 id="property-description">Description</h2>
             <p className="property-description">{property.description}</p>
           </section>
 
-          <section className="property-section" data-animate="fade-up">
-            <h2>Amenities</h2>
+          <section className="property-section" data-animate="fade-up" aria-labelledby="property-amenities">
+            <h2 id="property-amenities">Amenities</h2>
             <ul className="amenities-grid">
               {property.amenities.map((amenity) => (
                 <li key={amenity}>
@@ -154,41 +198,41 @@ export default function PropertyDetail() {
             </ul>
           </section>
 
-          <section className="property-section" data-animate="fade-up">
-            <h2>Property details</h2>
-            <div className="features-table-wrap">
-              <table className="features-table">
-                <caption className="sr-only">Details for {property.title}</caption>
-                <tbody>
-                  {featureRows.map(([label, value]) => (
-                    <tr key={label}>
-                      <th scope="row">{label}</th>
-                      <td>{value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
           <section className="property-section property-location-section" data-animate="fade-up">
             <div className="property-location-copy">
-              <p className="eyebrow">The neighbourhood</p>
-              <h2>{property.location}, {property.city}</h2>
+              <p className="eyebrow">Location</p>
+              <h2>
+                {property.location}, {property.city}
+              </h2>
               <p>
-                A well-connected pocket of {property.city}, with everyday essentials, green spaces
-                and a strong sense of community close to home. Ask us for our longer neighbourhood
-                guide when you visit.
+                Ask us about the immediate neighbourhood, road access, nearby amenities and the
+                practical questions to consider before arranging a visit.
               </p>
-              <Link to={`/properties?location=${encodeURIComponent(property.location)}`} className="text-link">
-                More homes in {property.location}
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
+              <div className="property-location-actions">
+                <a
+                  href={whatsappHref}
+                  className="btn btn-whatsapp btn-sm"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <WhatsAppIcon size={16} />
+                  Ask about this area
+                </a>
+                <Link
+                  to={`/properties?location=${encodeURIComponent(property.location)}`}
+                  className="text-link"
+                >
+                  More in {property.location}
+                  <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              </div>
             </div>
-            <MapPlaceholder label={`${property.location}, ${property.city}`} />
+            <MapEmbed
+              title={`Map of ${property.location}, ${property.city}`}
+              query={`${property.location}, ${property.city}, Pakistan`}
+              label={`${property.location}, ${property.city}`}
+            />
           </section>
-
-          <MortgageCalculator initialPrice={property.price} />
         </div>
 
         <div className="property-aside">
@@ -201,8 +245,8 @@ export default function PropertyDetail() {
           <div className="section-heading-row" data-animate="fade-up">
             <SectionHeading
               eyebrow="You may also like"
-              title="Similar places to consider"
-              text="A few more homes that share the same sense of space and place."
+              title="Similar properties to consider"
+              text="A few more sample listings that match this property type or purpose."
             />
             <Link to="/properties" className="text-link">
               View all properties
@@ -210,8 +254,8 @@ export default function PropertyDetail() {
             </Link>
           </div>
           <div className="property-grid" data-stagger>
-            {similarProperties.map((item, index) => (
-              <PropertyCard key={item.id} property={item} index={index} />
+            {similarProperties.map((item) => (
+              <PropertyCard key={item.id} property={item} />
             ))}
           </div>
         </div>

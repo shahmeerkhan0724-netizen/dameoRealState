@@ -18,6 +18,7 @@ export default function Layout() {
   const routeRef = useRef(null)
   const overlayRef = useRef(null)
   const isFirstRoute = useRef(true)
+  const isFirstNavigation = useRef(true)
 
   useLayoutEffect(() => {
     if (lenis) {
@@ -26,6 +27,15 @@ export default function Layout() {
       window.scrollTo(0, 0)
     }
   }, [location.pathname, lenis])
+
+  useEffect(() => {
+    if (isFirstNavigation.current) {
+      isFirstNavigation.current = false
+      return
+    }
+    const main = document.getElementById('main-content')
+    main?.focus({ preventScroll: true })
+  }, [location.pathname])
 
   useGSAP(
     () => {
@@ -117,7 +127,7 @@ export default function Layout() {
         Skip to content
       </a>
       <Navbar />
-      <main id="main-content" className="main-content">
+      <main id="main-content" className="main-content" tabIndex={-1}>
         <div className="route-view" ref={routeRef} key={location.pathname}>
           <Outlet />
         </div>

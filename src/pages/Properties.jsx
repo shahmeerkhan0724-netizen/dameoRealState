@@ -7,12 +7,18 @@ import {
   LayoutGrid,
   List,
   MapPin,
+  Search,
   SearchX,
   SlidersHorizontal,
   X,
 } from 'lucide-react'
 import { Flip, gsap, useGSAP } from '../lib/gsap'
-import properties, { locations, priceBounds, propertyTypes } from '../data/properties'
+import properties, {
+  locations,
+  priceBounds,
+  propertyTypes,
+  SAMPLE_LISTINGS_NOTE,
+} from '../data/properties'
 import { formatCurrency } from '../lib/format'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import { useFavourites } from '../context/FavouritesContext'
@@ -20,7 +26,7 @@ import PageHero from '../components/PageHero'
 import PropertyCard from '../components/PropertyCard'
 
 const pageImage =
-  'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=1400&q=70'
+  'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=1500&q=75'
 
 const sortLabels = {
   newest: 'Newest first',
@@ -101,24 +107,27 @@ function PriceRange({ bounds, values, step, onChange }) {
 }
 
 export default function Properties() {
-  useDocumentTitle('Properties')
+  useDocumentTitle(
+    'Properties for Sale & Rent in Karachi',
+    'Browse sample houses, apartments, plots, shops and offices in Karachi. Contact Karachi Estate Property Advisor for current property assistance.',
+  )
   const [searchParams, setSearchParams] = useSearchParams()
   const { favourites } = useFavourites()
   const gridRef = useRef(null)
   const pendingFlip = useRef(null)
   const firstRender = useRef(true)
-  const panelRef = useRef(null)
 
   const purposeParam = searchParams.get('purpose')
   const purpose = purposeParam === 'Sale' || purposeParam === 'Rent' ? purposeParam : 'All'
   const location = searchParams.get('location') || ''
   const type = searchParams.get('type') || ''
+  const query = searchParams.get('q') || ''
   const beds = Number(searchParams.get('beds') || 0)
   const sort = sortLabels[searchParams.get('sort')] ? searchParams.get('sort') : 'newest'
   const favoritesOnly = searchParams.get('favorites') === '1'
   const view = searchParams.get('view') === 'list' ? 'list' : 'grid'
   const bounds = priceBounds[purpose] || priceBounds.All
-  const step = purpose === 'Rent' ? 100 : 25000
+  const step = purpose === 'Rent' ? 5000 : 500000
   const clamp = (value) => Math.min(bounds.max, Math.max(bounds.min, Number(value)))
   const minPrice = clamp(searchParams.get('minPrice') || bounds.min)
   const maxPrice = clamp(searchParams.get('maxPrice') || bounds.max)
@@ -177,6 +186,8 @@ export default function Properties() {
     setSearchParams(next, { replace: true })
   }
 
+  const normalizedQuery = query.trim().toLowerCase()
+
   let filteredProperties = properties.filter((property) => {
     if (purpose !== 'All' && property.purpose !== purpose) return false
     if (location && property.location !== location) return false
@@ -184,6 +195,12 @@ export default function Properties() {
     if (beds && property.beds < beds) return false
     if (property.price < minPrice || property.price > maxPrice) return false
     if (favoritesOnly && !favourites.includes(property.id)) return false
+    if (normalizedQuery) {
+      const haystack = [property.title, property.location, property.type, property.description]
+        .join(' ')
+        .toLowerCase()
+      if (!haystack.includes(normalizedQuery)) return false
+    }
     return true
   })
 
@@ -194,14 +211,25 @@ export default function Properties() {
   })
 
   const filterKey = filteredProperties.map((property) => property.id).join('|')
-  const hasFilters = ['location', 'purpose', 'type', 'beds', 'minPrice', 'maxPrice', 'favorites', 'sort'].some(
-    (key) => searchParams.has(key),
-  )
+  const hasFilters = [
+    'location',
+    'purpose',
+    'type',
+    'beds',
+    'minPrice',
+    'maxPrice',
+    'favorites',
+    'sort',
+    'q',
+  ].some((key) => searchParams.has(key))
 
   useGSAP(
     () => {
       const grid = gridRef.current
-      if (!grid) return undefined
+      if (!grid) {
+        pendingFlip.current = null
+        return undefined
+      }
 
       const cards = gsap.utils.toArray('.property-card', grid)
 
@@ -253,16 +281,16 @@ export default function Properties() {
   return (
     <>
       <PageHero
-        eyebrow="The collection"
-        title="Homes to come home to"
-        description="A thoughtful edit of properties for sale and rent across our fictional neighbourhoods. Refine the list to find your fit."
+        eyebrow="Karachi property listings"
+        title="Properties for Sale & Rent in Karachi"
+        description="Explore sample houses, apartments, plots, shops and offices. Refine the list by location, type, budget and bedrooms."
         image={pageImage}
-        imageAlt="Aerial view of a green city neighbourhood at golden hour"
+        imageAlt="Aerial view of a city neighbourhood at golden hour"
       />
 
       <section className="properties-section">
         <div className="container properties-container">
-          <div className="filters-panel" ref={panelRef} data-animate="fade-up" aria-label="Property filters">
+          <div className="filters-panel" data-animate="fade-up" aria-label="Property filters">
             <div className="filters-head">
               <h2>
                 <SlidersHorizontal size={18} aria-hidden="true" />
@@ -280,6 +308,21 @@ export default function Properties() {
             </div>
 
             <div className="filters-grid">
+              <div className="filter-field filter-search-field">
+                <label htmlFor="filter-query">Search</label>
+                <div className="filter-input-wrap">
+                  <Search size={15} aria-hidden="true" />
+                  <input
+                    id="filter-query"
+                    type="search"
+                    className="filter-input"
+                    placeholder="Title, area or keyword"
+                    value={query}
+                    onChange={(event) => setParam('q', event.target.value)}
+                  />
+                </div>
+              </div>
+
               <FilterField label="Location" htmlFor="filter-location">
                 <select
                   id="filter-location"
@@ -295,7 +338,7 @@ export default function Properties() {
                 </select>
               </FilterField>
 
-              <FilterField label="Purpose" htmlFor="filter-purpose">
+              <FilterField label="Buy or rent" htmlFor="filter-purpose">
                 <select id="filter-purpose" value={purpose} onChange={updatePurpose}>
                   <option value="All">Buy or rent</option>
                   <option value="Sale">Buy</option>
@@ -399,19 +442,21 @@ export default function Properties() {
             <p aria-live="polite">
               <strong>{filteredProperties.length}</strong>{' '}
               {filteredProperties.length === 1 ? 'property' : 'properties'}
-              <span className="results-total"> of {properties.length}</span>
+              <span className="results-total"> of {properties.length} sample listings</span>
               {favoritesOnly ? ' saved' : ''}
             </p>
             <p className="results-location">
               <MapPin size={15} aria-hidden="true" />
-              {location || 'All neighbourhoods'}
+              {location || 'Karachi'}
             </p>
           </div>
 
+          <p className="listing-disclaimer listing-disclaimer--inline">{SAMPLE_LISTINGS_NOTE}</p>
+
           {filteredProperties.length ? (
             <div className={`properties-grid ${view === 'list' ? 'is-list' : 'is-grid'}`} ref={gridRef}>
-              {filteredProperties.map((property, index) => (
-                <PropertyCard key={property.id} property={property} index={index} />
+              {filteredProperties.map((property) => (
+                <PropertyCard key={property.id} property={property} />
               ))}
             </div>
           ) : (
@@ -421,11 +466,11 @@ export default function Properties() {
                 <SearchX size={42} />
               </div>
               <p className="eyebrow">Nothing quite yet</p>
-              <h2>{favoritesOnly ? 'Your saved collection is empty' : 'No homes match those filters'}</h2>
+              <h2>{favoritesOnly ? 'Your saved collection is empty' : 'No properties match those filters'}</h2>
               <p>
                 {favoritesOnly
                   ? 'Tap the heart on any property to keep it here for later.'
-                  : 'Try widening the price range or removing a location to see more properties.'}
+                  : 'Try widening the price range, changing the area or clearing the search keyword.'}
               </p>
               <div className="empty-state-actions">
                 <button type="button" className="btn btn-gold" onClick={clearFilters}>

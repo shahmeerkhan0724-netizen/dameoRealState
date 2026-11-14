@@ -1,8 +1,8 @@
 {
-  "name": "yourbrand-estates-demo",
+  "name": "karachi-estate-property-advisor",
   "private": true,
   "version": "1.0.0",
-  "description": "A premium multi-page real-estate demo built with React, Vite and GSAP.",
+  "description": "Production website for Karachi Estate Property Advisor, a real estate agency in Karachi.",
   "type": "module",
   "scripts": {
     "dev": "vite",

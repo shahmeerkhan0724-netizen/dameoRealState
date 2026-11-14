@@ -1,18 +1,18 @@
-import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Bath, BedDouble, Heart, MapPin, Maximize } from 'lucide-react'
 import SmartImage from './SmartImage'
+import WhatsAppIcon from './WhatsAppIcon'
 import { formatPrice } from '../lib/format'
+import { propertyWhatsAppLink } from '../lib/contact'
 import { useFavourites } from '../context/FavouritesContext'
 
-export default function PropertyCard({ property, index = 0 }) {
+export default function PropertyCard({ property }) {
   const { isFavourite, toggleFavourite } = useFavourites()
   const favourite = isFavourite(property.id)
-  const mediaRef = useRef(null)
 
   return (
     <article className="property-card" data-property-id={property.id}>
-      <div className="property-card-media" ref={mediaRef}>
+      <div className="property-card-media">
         <Link to={`/properties/${property.id}`} aria-label={`View ${property.title}`}>
           <SmartImage
             src={property.images[0].src}
@@ -26,6 +26,7 @@ export default function PropertyCard({ property, index = 0 }) {
             {property.status}
           </span>
           {property.featured ? <span className="badge badge-glass">Featured</span> : null}
+          {property.sample ? <span className="badge badge-glass">Sample</span> : null}
         </div>
         <button
           type="button"
@@ -62,6 +63,8 @@ export default function PropertyCard({ property, index = 0 }) {
           {property.location}, {property.city}
         </p>
 
+        <p className="property-card-description">{property.description}</p>
+
         <div className="property-meta">
           {property.beds > 0 ? (
             <span>
@@ -78,8 +81,23 @@ export default function PropertyCard({ property, index = 0 }) {
             {property.areaUnit}
           </span>
         </div>
+
+        <div className="property-card-actions">
+          <Link to={`/properties/${property.id}`} className="btn btn-outline-navy btn-sm">
+            View details
+          </Link>
+          <a
+            href={propertyWhatsAppLink(property)}
+            className="btn btn-whatsapp btn-sm"
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`WhatsApp enquiry about ${property.title}`}
+          >
+            <WhatsAppIcon size={16} />
+            WhatsApp
+          </a>
+        </div>
       </div>
-      <span className="sr-only">Property {index + 1}</span>
     </article>
   )
 }

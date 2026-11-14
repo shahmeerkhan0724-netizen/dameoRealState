@@ -1,7 +1,6 @@
 import { useRef } from 'react'
 import { gsap, useGSAP } from '../lib/gsap'
 import siteConfig from '../config/siteConfig'
-import { BrandMark } from './Logo'
 
 export default function Preloader({ onComplete }) {
   const rootRef = useRef(null)
@@ -24,7 +23,8 @@ export default function Preloader({ onComplete }) {
           duration: 1.1,
           ease: 'power2.inOut',
           onUpdate: () => {
-            if (percentNode) percentNode.textContent = String(Math.round(percent.value)).padStart(3, '0')
+            if (percentNode)
+              percentNode.textContent = String(Math.round(percent.value)).padStart(3, '0')
           },
         })
         .fromTo(
@@ -51,17 +51,17 @@ export default function Preloader({ onComplete }) {
     <div className="preloader" ref={rootRef}>
       <div className="preloader-inner">
         <div className="preloader-brand">
-          <BrandMark className="preloader-mark" />
-          <div>
-            <p className="preloader-name">{siteConfig.brandName}</p>
-            <p className="preloader-tagline">{siteConfig.tagline}</p>
-          </div>
+          <span className="preloader-logo-plate">
+            <img src={siteConfig.logo} alt={siteConfig.logoAlt} width="1536" height="1024" />
+          </span>
         </div>
+        <p className="preloader-name">{siteConfig.brandName}</p>
+        <p className="preloader-tagline">{siteConfig.tagline}</p>
         <div className="preloader-progress" aria-hidden="true">
           <span className="preloader-progress-fill" />
         </div>
         <div className="preloader-meta">
-          <span>Curating your next chapter</span>
+          <span>Preparing your property search</span>
           <span className="preloader-percent">000</span>
         </div>
       </div>
